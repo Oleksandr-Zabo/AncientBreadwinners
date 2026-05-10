@@ -1,17 +1,18 @@
 package com.example.ancientbreadwinners;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
+import java.io.Serializable;
+import java.util.*;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
-public class Village {
+public class Village implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     public record Placement(double x, double y) {}
 
     private final List<MacroObject> macroObjects = new ArrayList<>();
     private final List<Farmer> farmers = new ArrayList<>();
+    private int totalCoins = 0;
 
     public List<MacroObject> getMacroObjects() {
         return Collections.unmodifiableList(macroObjects);
@@ -20,6 +21,14 @@ public class Village {
     public List<Farmer> getFarmers() {
         return Collections.unmodifiableList(farmers);
     }
+
+    public int getTotalCoins() { return totalCoins; }
+
+    public void addCoins(int amount) {
+        totalCoins = Math.max(0, totalCoins + amount);
+    }
+
+    public void setTotalCoins(int v) { totalCoins = Math.max(0, v); }
 
     public void addMacroObject(MacroObject macroObject) {
         macroObjects.add(macroObject);
@@ -30,40 +39,32 @@ public class Village {
     }
 
     public void removeFarmer(Farmer farmer) {
-        for (MacroObject macroObject : macroObjects) {
-            macroObject.removeFarmer(farmer);
-        }
+        for (MacroObject mo : macroObjects) mo.removeFarmer(farmer);
         farmers.remove(farmer);
     }
 
     public void clearMembership(Farmer farmer) {
-        for (MacroObject macroObject : macroObjects) {
-            macroObject.removeFarmer(farmer);
-        }
+        for (MacroObject mo : macroObjects) mo.removeFarmer(farmer);
     }
 
     public void assignToMacro(Farmer farmer, MacroObject target) {
-        if (target == null || !farmers.contains(farmer)) {
-            return;
-        }
+        if (target == null || !farmers.contains(farmer)) return;
         clearMembership(farmer);
         target.addFarmer(farmer);
     }
 
     public Optional<MacroObject> findTouchedMacro(Farmer farmer) {
-        for (MacroObject macroObject : macroObjects) {
-            if (intersects(farmer.getX(), farmer.getY(), macroObject.getX(), macroObject.getY(), macroObject.getWidth(), macroObject.getHeight())) {
-                return Optional.of(macroObject);
+        for (MacroObject mo : macroObjects) {
+            if (intersects(farmer.getX(), farmer.getY(), mo.getX(), mo.getY(), mo.getWidth(), mo.getHeight())) {
+                return Optional.of(mo);
             }
         }
         return Optional.empty();
     }
 
-    public boolean placeInsideMacro(Farmer farmer, MacroObject macroObject) {
-        Placement spot = findFreeSpot(macroObject.getX(), macroObject.getY(), macroObject.getWidth(), macroObject.getHeight(), farmer);
-        if (spot == null) {
-            return false;
-        }
+    public boolean placeInsideMacro(Farmer farmer, MacroObject mo) {
+        Placement spot = findFreeSpot(mo.getX(), mo.getY(), mo.getWidth(), mo.getHeight(), farmer);
+        if (spot == null) return false;
         farmer.setX(spot.x());
         farmer.setY(spot.y());
         return true;
@@ -81,28 +82,19 @@ public class Village {
                 {Farmer.WIDTH + step, Farmer.HEIGHT + step},
                 {-(Farmer.WIDTH + step), Farmer.HEIGHT + step}
         };
-
-        for (double[] offset : offsets) {
-            double x = source.getX() + offset[0];
-            double y = source.getY() + offset[1];
-            if (x < 0 || y < 0 || x + Farmer.WIDTH > worldWidth || y + Farmer.HEIGHT > worldHeight) {
-                continue;
-            }
-            if (isAreaFree(x, y, source)) {
-                return Optional.of(new Placement(x, y));
-            }
+        for (double[] off : offsets) {
+            double x = source.getX() + off[0];
+            double y = source.getY() + off[1];
+            if (x < 0 || y < 0 || x + Farmer.WIDTH > worldWidth || y + Farmer.HEIGHT > worldHeight) continue;
+            if (isAreaFree(x, y, source)) return Optional.of(new Placement(x, y));
         }
         return Optional.empty();
     }
 
     public boolean isAreaFree(double x, double y, Farmer ignored) {
         for (Farmer other : farmers) {
-            if (other == ignored) {
-                continue;
-            }
-            if (intersects(x, y, other.getX(), other.getY(), Farmer.WIDTH, Farmer.HEIGHT)) {
-                return false;
-            }
+            if (other == ignored) continue;
+            if (intersects(x, y, other.getX(), other.getY(), Farmer.WIDTH, Farmer.HEIGHT)) return false;
         }
         return true;
     }
@@ -111,9 +103,7 @@ public class Village {
         double step = 20;
         for (double y = top; y <= top + height - Farmer.HEIGHT; y += step) {
             for (double x = left; x <= left + width - Farmer.WIDTH; x += step) {
-                if (isAreaFree(x, y, ignored)) {
-                    return new Placement(x, y);
-                }
+                if (isAreaFree(x, y, ignored)) return new Placement(x, y);
             }
         }
         return null;
@@ -125,10 +115,8 @@ public class Village {
 
     public List<MacroObject> memberships(Farmer farmer) {
         List<MacroObject> result = new ArrayList<>();
-        for (MacroObject macroObject : macroObjects) {
-            if (macroObject.contains(farmer)) {
-                result.add(macroObject);
-            }
+        for (MacroObject mo : macroObjects) {
+            if (mo.contains(farmer)) result.add(mo);
         }
         return result;
     }
@@ -153,19 +141,33 @@ public class Village {
         });
     }
 
+    public void sortBySpeed() {
+        farmers.sort((f1, f2) -> Double.compare(f1.getSpeed(), f2.getSpeed()));
+    }
+
+    public List<Farmer> farmersByType(Class<? extends Farmer> type) {
+        return farmers.stream()
+                .filter(type::isInstance)
+                .collect(Collectors.toList());
+    }
+
+    public long countWithHighMotivation(int threshold) {
+        return farmers.stream().filter(f -> f.getMotivation() > threshold).count();
+    }
+
+    public long countWithoutTool() {
+        return farmers.stream().filter(f -> f.getTool().getType() == ToolTypes.NoTool).count();
+    }
 
     public List<Farmer> cloneFarmersList() {
         List<Farmer> cloned = new ArrayList<>(farmers.size());
-        for (Farmer f : farmers) {
-            cloned.add(f != null ? f.clone() : null);
-        }
+        for (Farmer f : farmers) cloned.add(f != null ? f.clone() : null);
         return cloned;
     }
 
     public int binarySearch(Farmer key, Comparator<Farmer> comparator) {
         return Collections.binarySearch(farmers, key, comparator);
     }
-
 
     public int[] findAllMatches(Farmer key, Comparator<Farmer> comparator) {
         int idx = binarySearch(key, comparator);
@@ -179,5 +181,18 @@ public class Village {
     public void deleteByCategory(Predicate<Farmer> predicate) {
         farmers.removeIf(predicate);
     }
-}
 
+    public void loadFrom(Village other) {
+        macroObjects.clear();
+        macroObjects.addAll(other.macroObjects);
+        farmers.clear();
+        farmers.addAll(other.farmers);
+        totalCoins = other.totalCoins;
+    }
+
+    public void clearAll() {
+        macroObjects.clear();
+        farmers.clear();
+        totalCoins = 0;
+    }
+}

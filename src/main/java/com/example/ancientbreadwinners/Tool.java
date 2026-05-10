@@ -1,6 +1,10 @@
 package com.example.ancientbreadwinners;
 
-public class Tool implements Cloneable {
+import java.io.Serializable;
+
+public class Tool implements Cloneable, Serializable {
+    private static final long serialVersionUID = 1L;
+
     private ToolTypes type;
     private float speedX;
 
@@ -25,12 +29,13 @@ public class Tool implements Cloneable {
         return speedX;
     }
 
+    public double speedCoeff() {
+        return type == null ? 1.0 : type.speedCoeff();
+    }
+
     @Override
     public String toString() {
-        return "Tool{" +
-                "type=" + type +
-                ", speedX=" + speedX +
-                '}';
+        return "Tool{type=" + type + ", speedX=" + speedX + '}';
     }
 
     @Override
@@ -42,4 +47,3 @@ public class Tool implements Cloneable {
         }
     }
 }
-

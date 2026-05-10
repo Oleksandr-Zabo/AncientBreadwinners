@@ -1,9 +1,12 @@
 package com.example.ancientbreadwinners;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class MacroObject {
+public abstract class MacroObject implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private final String name;
     private final String imageAsset;
     private final double x;
@@ -21,46 +24,21 @@ public abstract class MacroObject {
         this.height = height;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public String getImageAsset() {
-        return imageAsset;
-    }
-
-    public double getX() {
-        return x;
-    }
-
-    public double getY() {
-        return y;
-    }
-
-    public double getWidth() {
-        return width;
-    }
-
-    public double getHeight() {
-        return height;
-    }
-
-    public List<Farmer> getMembers() {
-        return members;
-    }
-
-    public int getCount() {
-        return members.size();
-    }
+    public String getName() { return name; }
+    public String getImageAsset() { return imageAsset; }
+    public double getX() { return x; }
+    public double getY() { return y; }
+    public double getWidth() { return width; }
+    public double getHeight() { return height; }
+    public List<Farmer> getMembers() { return members; }
+    public int getCount() { return members.size(); }
 
     public boolean contains(Farmer farmer) {
         return members.contains(farmer);
     }
 
     public boolean addFarmer(Farmer farmer) {
-        if (farmer == null || members.contains(farmer)) {
-            return false;
-        }
+        if (farmer == null || members.contains(farmer)) return false;
         members.add(farmer);
         return true;
     }
@@ -78,5 +56,3 @@ public abstract class MacroObject {
         return name;
     }
 }
-
-

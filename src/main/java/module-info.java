@@ -1,9 +1,8 @@
 module com.example.ancientbreadwinners {
     requires javafx.controls;
     requires javafx.fxml;
-    requires java.compiler;
+    requires javafx.graphics;
 
-
-    opens com.example.ancientbreadwinners to javafx.fxml;
+    opens com.example.ancientbreadwinners;
     exports com.example.ancientbreadwinners;
 }
