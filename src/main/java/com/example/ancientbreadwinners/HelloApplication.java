@@ -122,7 +122,7 @@ public class HelloApplication extends Application {
         MenuBar menuBar = new MenuBar();
         menuBar.getMenus().addAll(
                 buildFileMenu(stage),
-                buildEditMenu(),
+                buildSelectionMenu(),
                 buildControlsMenu(),
                 buildWindowsMenu(),
                 buildAboutMenu());
@@ -154,9 +154,6 @@ public class HelloApplication extends Application {
     private Menu buildFileMenu(Stage stage) {
         Menu file = new Menu("Файл");
 
-        MenuItem create = new MenuItem("Створити хлібороба  [Insert]");
-        create.setOnAction(e -> { showCreateDialog(); redraw(); });
-
         MenuItem save = new MenuItem("Зберегти гру  [Ctrl+S]");
         save.setOnAction(e -> showSaveDialog());
 
@@ -166,12 +163,12 @@ public class HelloApplication extends Application {
         MenuItem exit = new MenuItem("Вихід");
         exit.setOnAction(e -> stage.close());
 
-        file.getItems().addAll(create, new SeparatorMenuItem(), save, load, new SeparatorMenuItem(), exit);
+        file.getItems().addAll(save, load, new SeparatorMenuItem(), exit);
         return file;
     }
 
-    private Menu buildEditMenu() {
-        Menu edit = new Menu("Редагувати");
+    private Menu buildSelectionMenu() {
+        Menu selection = new Menu("Виділені");
 
         MenuItem copy   = new MenuItem("Копіювати виділених  [Ctrl+C]");
         copy.setOnAction(e -> { cloneSelected(); redraw(); });
@@ -185,8 +182,14 @@ public class HelloApplication extends Application {
         MenuItem detach = new MenuItem("Вилучити з макрооб'єкта");
         detach.setOnAction(e -> { detachSelected(); redraw(); });
 
-        edit.getItems().addAll(copy, delete, clear, new SeparatorMenuItem(), detach);
-        return edit;
+        MenuItem edit = new MenuItem("Редагувати хлібороба  [ПКМ]");
+        edit.setOnAction(e -> {
+            if (selectedFarmer != null) showEditDialog(selectedFarmer);
+            else showInfo("Спочатку виберіть хлібороба");
+        });
+
+        selection.getItems().addAll(copy, delete, clear, new SeparatorMenuItem(), detach, edit);
+        return selection;
     }
 
     private Menu buildControlsMenu() {
@@ -265,12 +268,6 @@ public class HelloApplication extends Application {
         MenuItem create = new MenuItem("Створення хлібороба  [Insert]");
         create.setOnAction(e -> { showCreateDialog(); redraw(); });
 
-        MenuItem edit = new MenuItem("Редагування хлібороба  [ПКМ]");
-        edit.setOnAction(e -> {
-            if (selectedFarmer != null) showEditDialog(selectedFarmer);
-            else showInfo("Спочатку виберіть хлібороба");
-        });
-
         MenuItem buyTool = new MenuItem("Купити інструмент  [I]");
         buyTool.setOnAction(e -> showBuyToolDialog(primaryStage));
 
@@ -298,19 +295,12 @@ public class HelloApplication extends Application {
         MenuItem sort = new MenuItem("Критерій сортування  [R]");
         sort.setOnAction(e -> showSortDialog(primaryStage));
 
-        MenuItem save = new MenuItem("Зберегти гру  [Ctrl+S]");
-        save.setOnAction(e -> showSaveDialog());
-
-        MenuItem load = new MenuItem("Завантажити гру  [Ctrl+O]");
-        load.setOnAction(e -> { showLoadDialog(); redraw(); });
-
         windows.getItems().addAll(
-            create, edit, new SeparatorMenuItem(),
+            create, new SeparatorMenuItem(),
             buyTool, find, new SeparatorMenuItem(),
             listField, listMill, listChurch, new SeparatorMenuItem(),
             countActive, countMotivation, countNoTool, new SeparatorMenuItem(),
-            sort, new SeparatorMenuItem(),
-            save, load
+            sort
         );
         return windows;
     }
@@ -717,7 +707,12 @@ public class HelloApplication extends Application {
         pane.setOnMousePressed(e -> {
             worldPane.requestFocus();
             if (e.getButton() == MouseButton.PRIMARY) {
-                farmer.setActive(!farmer.isActive());
+                if (!e.isControlDown()) {
+                    clearSelection();
+                    farmer.setActive(true);
+                } else {
+                    farmer.setActive(!farmer.isActive());
+                }
                 selectedFarmer = farmer;
                 selectedMacro = null;
                 redraw();
