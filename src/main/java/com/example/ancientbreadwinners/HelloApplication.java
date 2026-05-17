@@ -60,8 +60,24 @@ public class HelloApplication extends Application {
     private AnimationTimer animationTimer;
     private Stage primaryStage;
     private SortCriteria sortCriteria = SortCriteria.BY_NAME;
+    private InteractionMode interactionMode = InteractionMode.AUTOMATIC;
 
     private enum SortCriteria { BY_NAME, BY_LOAD, BY_SPEED }
+
+    private enum InteractionMode {
+        AUTOMATIC("AUTOMATIC"),
+        MANUAL("MANUAL");
+
+        private final String label;
+
+        InteractionMode(String label) {
+            this.label = label;
+        }
+
+        public String label() {
+            return label;
+        }
+    }
 
     private final Village village = new Village();
 
@@ -196,7 +212,8 @@ public class HelloApplication extends Application {
         Menu ctrl = new Menu("Керування");
         MenuItem showControls = new MenuItem("Показати керування");
         showControls.setOnAction(e -> showControlsDialog());
-        ctrl.getItems().add(showControls);
+
+        ctrl.getItems().addAll(showControls);
         return ctrl;
     }
 
@@ -242,12 +259,17 @@ public class HelloApplication extends Application {
 
 Статистика:
   V — кількість активних
-  K — кількість із мотивацією > 50%
   T — кількість без інструменту
+
+Режим взаємодії:
+  K — перемкнути режим AUTOMATIC / MANUAL
 
 Швидкість гри:
   L — сповільнити рух вдвічі
   X — нормальна швидкість
+
+Списки:
+  G — список хліборобів без макрооб'єкта
 
 Збереження:
   Ctrl+S — зберегти гру
@@ -283,10 +305,13 @@ public class HelloApplication extends Application {
         MenuItem listChurch = new MenuItem("Список у Церкві  [J]");
         listChurch.setOnAction(e -> showListDialog(findMacroByType(Church.class), "Церква"));
 
+        MenuItem listWithoutMacro = new MenuItem("Мікрооб'єкти без макрооб'єкта  [G]");
+        listWithoutMacro.setOnAction(e -> showListDialog(null, "Без макрооб'єкта"));
+
         MenuItem countActive = new MenuItem("Активних хліборобів  [V]");
         countActive.setOnAction(e -> showCountInfo("Активних хліборобів", activeFarmers().size()));
 
-        MenuItem countMotivation = new MenuItem("З мотивацією > 50%  [K]");
+        MenuItem countMotivation = new MenuItem("З мотивацією > 50%");
         countMotivation.setOnAction(e -> showCountInfo("Хліборобів з мотивацією > 50%", (int) village.countWithHighMotivation(50)));
 
         MenuItem countNoTool = new MenuItem("Без інструменту  [T]");
@@ -298,7 +323,7 @@ public class HelloApplication extends Application {
         windows.getItems().addAll(
             create, new SeparatorMenuItem(),
             buyTool, find, new SeparatorMenuItem(),
-            listField, listMill, listChurch, new SeparatorMenuItem(),
+            listField, listMill, listChurch, listWithoutMacro, new SeparatorMenuItem(),
             countActive, countMotivation, countNoTool, new SeparatorMenuItem(),
             sort
         );
@@ -344,11 +369,11 @@ public class HelloApplication extends Application {
                 case E      -> showListDialog(findMacroByType(WheatField.class), "Пшеничне Поле");
                 case M      -> showListDialog(findMacroByType(Mill.class), "Млин");
                 case J      -> showListDialog(findMacroByType(Church.class), "Церква");
+                case G      -> showListDialog(null, "Без макрооб'єкта");
                 case Q      -> { exitSelectedFromMacro(); redraw(); }
                 case ENTER  -> { enterSelectedToMacro(); redraw(); }
                 case V      -> showCountInfo("Активних хліборобів", activeFarmers().size());
-                case K      -> showCountInfo("Хліборобів з мотивацією > 50 %",
-                                             (int) village.countWithHighMotivation(50));
+                case K      -> { toggleInteractionMode(); redraw(); }
                 case T      -> showCountInfo("Хліборобів без інструменту",
                                              (int) village.countWithoutTool());
                 case R      -> showSortDialog(stage);
@@ -468,19 +493,26 @@ public class HelloApplication extends Application {
             case WALKING_TO_FIELD -> {
                 MacroObject field = findNearestMacro(farmer, WheatField.class);
                 if (field == null) { farmer.setState(FarmerState.IDLE); break; }
-                double[] spot = findSpotInsideMacro(field, farmer);
+                double[] spot = interactionMode == InteractionMode.MANUAL
+                        ? findSpotOutsideMacro(field, farmer)
+                        : findSpotInsideMacro(field, farmer);
                 boolean arrived = moveFarmerTowards(farmer, spot[0], spot[1], dt);
                 if (arrived) {
-                    syncMembershipByTouch(farmer);
-                    double coeff = farmer.getTool().getType().speedCoeff();
-                    farmer.setWorkTimerEnd(now + workDurationNs(farmer.getMaxLoad(), coeff));
-                    farmer.setState(FarmerState.WORKING_AT_FIELD);
+                    if (interactionMode == InteractionMode.MANUAL) {
+                        syncMembershipByTouch(farmer);
+                    } else {
+                        syncMembershipByTouch(farmer);
+                        double coeff = farmer.getTool().getType().speedCoeff();
+                        farmer.setWorkTimerEnd(now + workDurationNs(farmer.getMaxLoad(), coeff));
+                        farmer.setState(FarmerState.WORKING_AT_FIELD);
+                    }
                 }
             }
             case WORKING_AT_FIELD -> {
                 if (now >= farmer.getWorkTimerEnd()) {
                     farmer.setCurrentLoad(farmer.getMaxLoad());
                     farmer.setMotivation(farmer.getMotivation() - farmer.motivationDropOnWork());
+                    resetMembershipAfterWorkCycle(farmer);
                     MacroObject mill = findNearestMacro(farmer, Mill.class);
                     farmer.setState(mill != null ? FarmerState.WALKING_TO_MILL : FarmerState.WALKING_TO_CHURCH);
                 }
@@ -488,36 +520,48 @@ public class HelloApplication extends Application {
             case WALKING_TO_MILL -> {
                 MacroObject mill = findNearestMacro(farmer, Mill.class);
                 if (mill == null) { farmer.setState(FarmerState.WALKING_TO_CHURCH); break; }
-                double[] spot = findSpotInsideMacro(mill, farmer);
+                double[] spot = interactionMode == InteractionMode.MANUAL
+                        ? findSpotOutsideMacro(mill, farmer)
+                        : findSpotInsideMacro(mill, farmer);
                 boolean arrived = moveFarmerTowards(farmer, spot[0], spot[1], dt);
                 if (arrived) {
-                    syncMembershipByTouch(farmer);
-                    double coeff = farmer.getTool().getType().speedCoeff();
-                    farmer.setWorkTimerEnd(now + workDurationNs(farmer.getMaxLoad(), coeff));
-                    farmer.setState(FarmerState.WORKING_AT_MILL);
+                    if (interactionMode == InteractionMode.MANUAL) {
+                        syncMembershipByTouch(farmer);
+                    } else {
+                        syncMembershipByTouch(farmer);
+                        double coeff = farmer.getTool().getType().speedCoeff();
+                        farmer.setWorkTimerEnd(now + workDurationNs(farmer.getMaxLoad(), coeff));
+                        farmer.setState(FarmerState.WORKING_AT_MILL);
+                    }
                 }
             }
             case WORKING_AT_MILL -> {
                 if (now >= farmer.getWorkTimerEnd()) {
                     farmer.setMotivation(farmer.getMotivation() - farmer.motivationDropOnWork());
+                    resetMembershipAfterWorkCycle(farmer);
                     farmer.setState(FarmerState.WALKING_TO_CHURCH_WITH_MONEY);
                 }
             }
             case WALKING_TO_CHURCH_WITH_MONEY -> {
                 if (church == null) { farmer.setState(FarmerState.IDLE); break; }
-                double[] spot = findSpotInsideMacro(church, farmer);
+                double[] spot = interactionMode == InteractionMode.MANUAL
+                        ? findSpotOutsideMacro(church, farmer)
+                        : findSpotInsideMacro(church, farmer);
                 boolean arrived = moveFarmerTowards(farmer, spot[0], spot[1], dt);
                 if (arrived) {
                     int earnings = farmer.getCurrentLoad() * ((farmer.getMaxLoad() + 1) / 2);
                     village.addCoins(earnings);
                     farmer.setCurrentLoad(0);
                     farmer.setMotivation(Math.min(100, farmer.getMotivation() + 30));
+                    resetMembershipAfterWorkCycle(farmer);
                     farmer.setState(FarmerState.IDLE);
                 }
             }
             case WALKING_TO_CHURCH -> {
                 if (church == null) { farmer.setState(FarmerState.IDLE); break; }
-                double[] spot = findSpotInsideMacro(church, farmer);
+                double[] spot = interactionMode == InteractionMode.MANUAL
+                        ? findSpotOutsideMacro(church, farmer)
+                        : findSpotInsideMacro(church, farmer);
                 boolean arrived = moveFarmerTowards(farmer, spot[0], spot[1], dt);
                 if (arrived) {
                     if (farmer.getCurrentLoad() > 0) {
@@ -525,17 +569,28 @@ public class HelloApplication extends Application {
                         village.addCoins(earnings);
                         farmer.setCurrentLoad(0);
                     }
-                    syncMembershipByTouch(farmer);
-                    farmer.setRestTimerEnd(now + 3_000_000_000L);
-                    farmer.setState(FarmerState.RESTING_AT_CHURCH);
+                    if (interactionMode == InteractionMode.MANUAL) {
+                        syncMembershipByTouch(farmer);
+                    } else {
+                        syncMembershipByTouch(farmer);
+                        farmer.setRestTimerEnd(now + 3_000_000_000L);
+                        farmer.setState(FarmerState.RESTING_AT_CHURCH);
+                    }
                 }
             }
             case RESTING_AT_CHURCH -> {
                 if (now >= farmer.getRestTimerEnd()) {
                     farmer.setMotivation(100);
+                    resetMembershipAfterWorkCycle(farmer);
                     farmer.setState(FarmerState.IDLE);
                 }
             }
+        }
+    }
+
+    private void resetMembershipAfterWorkCycle(Farmer farmer) {
+        if (interactionMode == InteractionMode.MANUAL) {
+            village.clearMembership(farmer);
         }
     }
 
@@ -587,6 +642,23 @@ public class HelloApplication extends Application {
         double x = baseX + col * (Farmer.WIDTH * 0.6);
         double y = baseY + row * (Farmer.HEIGHT * 0.6);
         return new double[]{x, y};
+    }
+
+    private double[] findSpotOutsideMacro(MacroObject macro, Farmer farmer) {
+        double mx = macro.getX() + macro.getWidth() / 2;
+        double my = macro.getY() + macro.getHeight() / 2;
+        double radius = macro.getWidth() / 2 + 50;
+
+        int index = village.getFarmers().indexOf(farmer);
+        int totalFarmers = village.getFarmers().size();
+        double angle = (2 * Math.PI * index) / Math.max(totalFarmers, 1);
+
+        double px = mx + radius * Math.cos(angle) - Farmer.WIDTH / 2;
+        double py = my + radius * Math.sin(angle) - Farmer.HEIGHT / 2;
+
+        px = clampMicroX(px);
+        py = clampMicroY(py);
+        return new double[]{px, py};
     }
 
     private void redraw() {
@@ -771,12 +843,13 @@ public class HelloApplication extends Application {
 
     private void updateStatus() {
         List<Farmer> active = activeFarmers();
+        String modeInfo = " | Режим: " + interactionMode.label();
         if (!active.isEmpty()) {
             String names = active.stream().limit(3).map(Farmer::getName).collect(Collectors.joining(", "));
             if (active.size() > 3) names += ", …";
-            activeLabel.setText("Активні: " + active.size() + " → " + names);
+            activeLabel.setText("Активні: " + active.size() + " → " + names + modeInfo);
         } else {
-            activeLabel.setText("Активні мікрооб'єкти: немає");
+            activeLabel.setText("Активні мікрооб'єкти: немає" + modeInfo);
         }
 
         coinsLabel.setText("Зароблено монет: " + village.getTotalCoins());
@@ -1337,12 +1410,28 @@ public class HelloApplication extends Application {
     }
 
     private void enterSelectedToMacro() {
+        long now = System.nanoTime();
         for (Farmer f : activeFarmers()) {
-            Optional<MacroObject> touched = findTouchedMacroByBody(f);
-            if (touched.isPresent()) {
-                MacroObject macro = touched.get();
-                placeInMacroWithSpacing(f, macro);
+            Optional<MacroObject> target = findTouchedMacroByBody(f);
+            if (target.isEmpty() && interactionMode == InteractionMode.MANUAL) {
+                target = findNearbyMacroForManualEnter(f, 30);
+            }
+            if (target.isEmpty()) continue;
+
+            MacroObject macro = target.get();
+            if (placeInMacroWithSpacing(f, macro)) {
                 village.assignToMacro(f, macro);
+                double coeff = f.getTool().getType().speedCoeff();
+                f.setWorkTimerEnd(now + workDurationNs(f.getMaxLoad(), coeff));
+                
+                if (macro instanceof WheatField) {
+                    f.setState(FarmerState.WORKING_AT_FIELD);
+                } else if (macro instanceof Mill) {
+                    f.setState(FarmerState.WORKING_AT_MILL);
+                } else if (macro instanceof Church) {
+                    f.setRestTimerEnd(now + 3_000_000_000L);
+                    f.setState(FarmerState.RESTING_AT_CHURCH);
+                }
             }
         }
     }
@@ -1357,10 +1446,10 @@ public class HelloApplication extends Application {
         }
     }
 
-    private void placeInMacroWithSpacing(Farmer farmer, MacroObject macro) {
-        if (!canEnterMacro(macro)) {
+    private boolean placeInMacroWithSpacing(Farmer farmer, MacroObject macro) {
+        if (!macro.contains(farmer) && !canEnterMacro(macro)) {
             showInfo("Макрооб'єкт переповнений! Максимум " + MAX_FARMERS_IN_MACRO + " фермерів.");
-            return;
+            return false;
         }
 
         double margin = 20;
@@ -1379,6 +1468,37 @@ public class HelloApplication extends Application {
 
         farmer.setX(x + centerOffsetX);
         farmer.setY(y + centerOffsetY);
+        return true;
+    }
+
+    private Optional<MacroObject> findNearbyMacroForManualEnter(Farmer farmer, double proximityPx) {
+        double fx = farmer.getX();
+        double fy = farmer.getY();
+        MacroObject best = null;
+        double bestDistance = Double.MAX_VALUE;
+
+        for (MacroObject mo : village.getMacroObjects()) {
+            double expandedLeft = mo.getX() - proximityPx;
+            double expandedTop = mo.getY() - proximityPx;
+            double expandedRight = mo.getX() + mo.getWidth() + proximityPx;
+            double expandedBottom = mo.getY() + mo.getHeight() + proximityPx;
+
+            boolean near = fx + Farmer.WIDTH >= expandedLeft
+                    && fx <= expandedRight
+                    && fy + Farmer.HEIGHT >= expandedTop
+                    && fy <= expandedBottom;
+            if (!near) continue;
+
+            double dx = (mo.getX() + mo.getWidth() / 2.0) - (fx + Farmer.WIDTH / 2.0);
+            double dy = (mo.getY() + mo.getHeight() / 2.0) - (fy + Farmer.HEIGHT / 2.0);
+            double dist = Math.hypot(dx, dy);
+            if (dist < bestDistance) {
+                bestDistance = dist;
+                best = mo;
+            }
+        }
+
+        return Optional.ofNullable(best);
     }
 
     private void upgradeSelectedFarmers() {
@@ -1449,21 +1569,28 @@ public class HelloApplication extends Application {
     }
 
     private void syncMembershipByTouch(Farmer farmer) {
+        if (interactionMode == InteractionMode.MANUAL) return;
+
         Optional<MacroObject> touched = findTouchedMacroByBody(farmer);
         if (touched.isPresent()) {
             MacroObject macro = touched.get();
             boolean alreadyMember = macro.contains(farmer);
-            if (!farmer.isActive() && !alreadyMember) {
+            if (!alreadyMember) {
                 if (canEnterMacro(macro)) {
                     teleportToFreePositionInMacro(farmer, macro);
                     village.assignToMacro(farmer, macro);
                 }
             }
         } else {
-            if (!farmer.isActive()) {
-                village.clearMembership(farmer);
-            }
+            village.clearMembership(farmer);
         }
+    }
+
+    private void toggleInteractionMode() {
+        interactionMode = interactionMode == InteractionMode.AUTOMATIC
+                ? InteractionMode.MANUAL
+                : InteractionMode.AUTOMATIC;
+        showInfo("Режим взаємодії: " + interactionMode.label());
     }
 
     private static final int MAX_FARMERS_IN_MACRO = 4;

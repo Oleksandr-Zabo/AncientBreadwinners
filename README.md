@@ -8,6 +8,8 @@
 - Білі підписи для кращої читабельності на фоні гри
 - Діалогове вікно керування з усіма клавішами
 - Оновлене меню: Файл, Редагувати, Керування, Вікна, Про гру
+- Режими взаємодії фермерів: `AUTOMATIC` та `MANUAL` (перемикання `K`)
+- Вікно `G` для списку фермерів без макрооб'єкта
 
 ## Architecture
 
@@ -49,6 +51,23 @@ Abstract class `MacroObject` contains:
 
 ## Micro-Macro Interaction
 
+### Режими взаємодії
+
+#### `AUTOMATIC` (за замовчуванням)
+- AI фермерів активна.
+- Членство у макрооб'єкті визначається дотиком: при контакті фермер автоматично додається, при втраті контакту - автоматично вилучається.
+- Ручний рух стрілками може вивести фермера з макрооб'єкта.
+
+#### `MANUAL`
+- AI рух залишається активним, але автоматичний вхід у макрооб'єкти вимкнений.
+- Вхід у макрооб'єкт тільки через `Enter` (для виділеного фермера біля макрооб'єкта).
+- `Q` виконує явний вихід із макрооб'єкта.
+- Після завершення робочого циклу членство автоматично скидається.
+
+### Списки без макро
+- `G` відкриває список фермерів, які не належать жодному макрооб'єкту.
+- Меню: **Вікна -> Мікрооб'єкти без макрооб'єкта [G]**.
+
 ### 1. Entering Macro-objects
 
 **Unselected (inactive) farmers:**
@@ -84,6 +103,8 @@ Active micro-object border color depends on macro-object:
 |-----|--------|
 | `Enter` | Enter macro-object (selected, on collision) |
 | `Q` | Exit macro-object (selected) |
+| `K` | Toggle interaction mode (`AUTOMATIC`/`MANUAL`) |
+| `G` | List farmers without macro-object |
 | `M` | List members in `Mill` |
 | `E` | List members in `WheatField` |
 | `J` | List members in `Church` |
@@ -108,7 +129,7 @@ Active micro-object border color depends on macro-object:
 | Файл | Створити, Зберегти (Ctrl+S), Завантажити (Ctrl+O), Вихід |
 | Редагувати | Копіювати (Ctrl+C), Видалити (Delete), Скасувати (Esc), Вилучити з макро |
 | Керування | Діалогове вікно з усіма клавішами |
-| Вікна | Всі діалоги: створення, редагування, покупка, пошук, списки, статистика, сортування |
+| Вікна | Всі діалоги: створення, редагування, покупка, пошук, списки (включно без макро), статистика, сортування |
 | Про гру | Інформація про гру |
 
 ## Implemented Behavior
@@ -128,6 +149,10 @@ Active micro-object border color depends on macro-object:
 - Three macro-objects added at startup
 - **Unselected farmers**: freely enter/exit macro-objects (teleport into macro on touch)
 - **Selected farmers**: enter via `Enter`, exit via `Q`
+- `K` toggles interaction mode between `AUTOMATIC` and `MANUAL`
+- In `MANUAL`, auto-enter by touch is disabled; only explicit `Enter` adds membership
+- In `MANUAL`, membership resets automatically after finishing work cycle
+- `G` shows all farmers without macro membership
 - Maximum 4 farmers per macro-object (2x2 grid with spacing)
 - If macro is full, new farmers wait outside (queue system)
 - Farmers positioned with spacing within macro-object bounds
@@ -146,6 +171,8 @@ Active micro-object border color depends on macro-object:
 | Arrow keys | Move active |
 | `Enter` | Enter macro-object (selected, on collision) |
 | `Q` | Exit macro-object (selected) |
+| `K` | Перемкнути режим взаємодії фермерів |
+| `G` | Список хліборобів без макрооб'єкта |
 | `M` | List in mill |
 | `E` | List in wheat field |
 | `J` | List in church |
