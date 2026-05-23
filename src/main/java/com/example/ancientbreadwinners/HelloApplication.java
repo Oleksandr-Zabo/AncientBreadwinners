@@ -439,29 +439,55 @@ public class HelloApplication extends Application {
     private void checkFarmerTalking(List<Farmer> farmers, long now) {
         for (int i = 0; i < farmers.size(); i++) {
             Farmer a = farmers.get(i);
-            if (a.getState() == FarmerState.TALKING || a.getState() == FarmerState.RESTING_AT_CHURCH || a.getState() == FarmerState.WALKING_TO_CHURCH_WITH_MONEY) continue;
+            if (!canStartConversation(a, now)) continue;
+            boolean startedConversation = false;
             for (int j = i + 1; j < farmers.size(); j++) {
                 Farmer b = farmers.get(j);
-                if (b.getState() == FarmerState.TALKING || b.getState() == FarmerState.RESTING_AT_CHURCH || b.getState() == FarmerState.WALKING_TO_CHURCH_WITH_MONEY) continue;
-                double dist = Math.hypot(a.getX() - b.getX(), a.getY() - b.getY());
-                if (dist < TALK_DISTANCE) {
-                    if (a.getMotivation() > 75 || b.getMotivation() > 75) continue;
-                    boolean aReady = (now - a.getLastSpokeNano()) > TALK_COOLDOWN_NS;
-                    boolean bReady = (now - b.getLastSpokeNano()) > TALK_COOLDOWN_NS;
-                    if (aReady && bReady) {
-                        a.speak(b);
-                        long end = now + TALK_DURATION_NS;
-                        a.setStateBeforeTalk(a.getState());
-                        b.setStateBeforeTalk(b.getState());
-                        a.setTalkTimerEnd(end);
-                        b.setTalkTimerEnd(end);
-                        a.setLastSpokeNano(now);
-                        b.setLastSpokeNano(now);
-                        a.setState(FarmerState.TALKING);
-                        b.setState(FarmerState.TALKING);
-                    }
+                if (!canStartConversation(b, now) || !areCloseForTalk(a, b)) continue;
+
+                for (int k = j + 1; k < farmers.size(); k++) {
+                    Farmer c = farmers.get(k);
+                    if (!canStartConversation(c, now)) continue;
+                    if (!areCloseForTalk(a, c) || !areCloseForTalk(b, c)) continue;
+
+                    a.speak(b, c);
+                    beginConversation(FarmerState.TALKING_TRIPLE, now, a, b, c);
+                    startedConversation = true;
+                    break;
                 }
+
+                if (startedConversation) break;
+
+                a.speak(b);
+                beginConversation(FarmerState.TALKING, now, a, b);
+                startedConversation = true;
+                break;
             }
+        }
+    }
+
+    private boolean canStartConversation(Farmer farmer, long now) {
+        FarmerState state = farmer.getState();
+        if (state == FarmerState.TALKING || state == FarmerState.TALKING_TRIPLE
+                || state == FarmerState.RESTING_AT_CHURCH
+                || state == FarmerState.WALKING_TO_CHURCH_WITH_MONEY) {
+            return false;
+        }
+        if (farmer.getMotivation() > 65) return false;
+        return (now - farmer.getLastSpokeNano()) > TALK_COOLDOWN_NS;
+    }
+
+    private boolean areCloseForTalk(Farmer a, Farmer b) {
+        return Math.hypot(a.getX() - b.getX(), a.getY() - b.getY()) < TALK_DISTANCE;
+    }
+
+    private void beginConversation(FarmerState conversationState, long now, Farmer... participants) {
+        long end = now + TALK_DURATION_NS;
+        for (Farmer participant : participants) {
+            participant.setStateBeforeTalk(participant.getState());
+            participant.setTalkTimerEnd(end);
+            participant.setLastSpokeNano(now);
+            participant.setState(conversationState);
         }
     }
 
@@ -470,7 +496,7 @@ public class HelloApplication extends Application {
 
         FarmerState state = farmer.getState();
 
-        if (state == FarmerState.TALKING) {
+        if (state == FarmerState.TALKING || state == FarmerState.TALKING_TRIPLE) {
             if (now >= farmer.getTalkTimerEnd()) farmer.setState(farmer.getStateBeforeTalk());
             return;
         }
@@ -726,12 +752,14 @@ public class HelloApplication extends Application {
                 || sy + MICRO_BLOCK_SIZE < 0 || sy > currentViewportHeight()) return;
 
         boolean talking = farmer.getState() == FarmerState.TALKING;
-        boolean showBlink = talking && blinkOn;
+        boolean tripleTalking = farmer.getState() == FarmerState.TALKING_TRIPLE;
+        boolean showBlink = (talking || tripleTalking) && blinkOn;
+        Color talkColor = tripleTalking ? Color.LIMEGREEN : Color.GOLD;
 
         List<MacroObject> memberships = village.memberships(farmer);
         Color strokeColor = farmer.isActive()
-                ? microStroke(memberships)
-                : (showBlink ? Color.GOLD : Color.TRANSPARENT);
+                ? (showBlink ? talkColor : microStroke(memberships))
+                : (showBlink ? talkColor : Color.TRANSPARENT);
 
         Rectangle motivBar = new Rectangle(0, MOTIVATION_OFFSET_Y,
                 MOTIVATION_BAR_W * farmer.getMotivation() / 100.0, MOTIVATION_BAR_H);

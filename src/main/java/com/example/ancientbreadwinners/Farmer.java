@@ -53,9 +53,24 @@ public abstract class Farmer implements Cloneable, Comparable<Farmer>, Serializa
     }
 
     public void speak(Farmer f1, Farmer f2) {
+        int thisBefore = this.getMotivation();
+        int f1Before = f1.getMotivation();
+        int f2Before = f2.getMotivation();
+
         this.speak();
         f1.speak();
         f2.speak();
+
+        applyTripleTalkBonus(this, thisBefore);
+        applyTripleTalkBonus(f1, f1Before);
+        applyTripleTalkBonus(f2, f2Before);
+    }
+
+    private void applyTripleTalkBonus(Farmer farmer, int beforeMotivation) {
+        int gained = farmer.getMotivation() - beforeMotivation;
+        if (gained > 0) {
+            farmer.setMotivation(farmer.getMotivation() + (int) Math.round(gained * 0.5));
+        }
     }
 
     public double effectiveSpeed() {

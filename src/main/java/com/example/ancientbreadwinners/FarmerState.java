@@ -9,5 +9,6 @@ public enum FarmerState {
     WALKING_TO_CHURCH_WITH_MONEY,
     WALKING_TO_CHURCH,
     RESTING_AT_CHURCH,
-    TALKING
+    TALKING,
+    TALKING_TRIPLE
 }

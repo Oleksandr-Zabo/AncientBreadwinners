@@ -10,6 +10,7 @@
 - Оновлене меню: Файл, Редагувати, Керування, Вікна, Про гру
 - Режими взаємодії фермерів: `AUTOMATIC` та `MANUAL` (перемикання `K`)
 - Вікно `G` для списку фермерів без макрооб'єкта
+- Потрійна розмова фермерів з зеленим миготінням і посиленим приростом мотивації
 
 ## Architecture
 
@@ -153,6 +154,7 @@ Active micro-object border color depends on macro-object:
 - In `MANUAL`, auto-enter by touch is disabled; only explicit `Enter` adds membership
 - In `MANUAL`, membership resets automatically after finishing work cycle
 - `G` shows all farmers without macro membership
+- Дві та три фермерські розмови мають окрему анімацію: звичайна — золота, потрійна — зелена
 - Maximum 4 farmers per macro-object (2x2 grid with spacing)
 - If macro is full, new farmers wait outside (queue system)
 - Farmers positioned with spacing within macro-object bounds
@@ -182,18 +184,32 @@ Active micro-object border color depends on macro-object:
 
 ## Build and Run
 
-Use Maven wrapper:
+Use Maven wrapper with JDK 26:
+
+```powershell
+java -version
+```
+
+Make sure it reports Java 26, then run:
 
 ```powershell
 .\mvnw.cmd -DskipTests clean compile
 .\mvnw.cmd javafx:run
 ```
 
+If you launch the app directly from IntelliJ IDEA, add this VM option to the run configuration:
+
+```text
+--enable-native-access=javafx.graphics
+```
+
 If Maven reports `JAVA_HOME not found`, first configure JDK path:
 
 ```powershell
-$env:JAVA_HOME = "C:\Program Files\Java\jdk-26"
+$env:JAVA_HOME = "C:\Program Files\Java\jdk-26.0.1"
 $env:Path = "$env:JAVA_HOME\bin;$env:Path"
 .\mvnw.cmd -DskipTests clean compile
 ```
+
+If your terminal still shows Java 21, update `JAVA_HOME` and `Path` to your JDK 26 install folder before running Maven.
 
