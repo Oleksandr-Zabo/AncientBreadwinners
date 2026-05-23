@@ -29,7 +29,7 @@ public class Gardener extends Farmer {
 
     @Override
     public void speak() {
-        setMotivation(getMotivation() + 15);
+        super.applySpeakGain(15);
     }
 
     @Override

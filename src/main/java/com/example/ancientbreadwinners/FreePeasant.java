@@ -2,7 +2,7 @@ package com.example.ancientbreadwinners;
 
 import java.util.Set;
 
-public class FreePeasant extends Farmer {
+public class FreePeasant extends Gardener {
     private static final long serialVersionUID = 1L;
 
     public FreePeasant(String name, int motivation, double speed, int maxLoad, Tool tool, double x, double y) {
@@ -29,7 +29,8 @@ public class FreePeasant extends Farmer {
 
     @Override
     public void speak() {
-        setMotivation(getMotivation() + 20);
+        super.speak();
+        super.applySpeakGain(5);
     }
 
     @Override

@@ -1127,9 +1127,9 @@ public class HelloApplication extends Application {
             List<Farmer> found = village.getFarmers().stream()
                     .filter(f -> nameFilt.isEmpty() || f.getName().toLowerCase().contains(nameFilt))
                     .filter(f -> {
-                        if ("Городник".equals(typeFilt))           return f instanceof Gardener;
-                        if ("Вільний Селянин".equals(typeFilt))     return f instanceof FreePeasant;
-                        if ("Майстер-Хлібороб".equals(typeFilt))   return f instanceof MasterFarmer;
+                        if ("Городник".equals(typeFilt))           return f.getClass() == Gardener.class;
+                        if ("Вільний Селянин".equals(typeFilt))     return f.getClass() == FreePeasant.class;
+                        if ("Майстер-Хлібороб".equals(typeFilt))   return f.getClass() == MasterFarmer.class;
                         return true;
                     })
                     .filter(f -> !loadFilter.isSelected() || f.getMaxLoad() >= minLoad)
@@ -1544,9 +1544,9 @@ public class HelloApplication extends Application {
             Farmer newFarmer = null;
             Tool currentTool = f.getTool();
 
-            if (f instanceof Gardener) {
+            if (f.getClass() == Gardener.class) {
                 newFarmer = new FreePeasant(f.getName(), f.getMotivation(), f.getSpeed(), f.getMaxLoad(), currentTool, f.getX(), f.getY());
-            } else if (f instanceof FreePeasant) {
+            } else if (f.getClass() == FreePeasant.class) {
                 newFarmer = new MasterFarmer(f.getName(), f.getMotivation(), f.getSpeed(), f.getMaxLoad(), currentTool, f.getX(), f.getY());
             }
 

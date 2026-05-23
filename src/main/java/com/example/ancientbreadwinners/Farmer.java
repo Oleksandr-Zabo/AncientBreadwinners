@@ -45,6 +45,10 @@ public abstract class Farmer implements Cloneable, Comparable<Farmer>, Serializa
 
     public abstract void speak();
 
+    protected final void applySpeakGain(int motivationGain) {
+        setMotivation(getMotivation() + motivationGain);
+    }
+
     public abstract int motivationDropOnWork();
 
     public void speak(Farmer other) {
