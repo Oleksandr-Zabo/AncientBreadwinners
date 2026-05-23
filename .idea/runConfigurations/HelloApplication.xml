@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="HelloApplication" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="com.example.ancientbreadwinners.HelloApplication" />
+    <module name="AncientBreadwinners" />
+    <option name="VM_PARAMETERS" value="--enable-native-access=javafx.graphics" />
+    <option name="PROGRAM_PARAMETERS" value="" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
+    <option name="ALTERNATIVE_JRE_PATH" value="" />
+    <option name="ENABLE_SWING_INSPECTOR" value="false" />
+    <option name="ENV_VARIABLES" />
+    <option name="PASS_PARENT_ENVS" value="true" />
+    <option name="METHOD_BREAKPOINT_ENABLED" value="false" />
+    <option name="USE_JAR_MANIFEST" value="false" />
+    <option name="USE_CLASSPATH_ONLY" value="false" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
+
