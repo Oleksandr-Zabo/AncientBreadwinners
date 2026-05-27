@@ -395,8 +395,8 @@ public class HelloApplication extends Application {
     private void clampCamera() {
         double vw = currentViewportWidth();
         double vh = currentViewportHeight();
-        cameraX = Math.max(0, Math.min(cameraX, WORLD_WIDTH  - vw));
-        cameraY = Math.max(0, Math.min(cameraY, WORLD_HEIGHT - vh));
+        cameraX = Math.clamp(cameraX, 0, WORLD_WIDTH - vw);
+        cameraY = Math.clamp(cameraY, 0, WORLD_HEIGHT - vh);
     }
 
     private void setupMinimapClick() {
