@@ -39,9 +39,6 @@ public class HelloApplication extends Application {
     private static final double MACRO_TITLE_OFFSET_Y  = 225;
     private static final double MACRO_STROKE_W        = 4.0;
 
-    private static final double MINIMAP_W             = 240;
-    private static final double MINIMAP_H             = 160;
-    private static final double CAMERA_STEP           = 60;
 
     private static final double BASE_SPEED_PPS        = 80.0;
     private static final double TALK_DISTANCE         = 110.0;
@@ -50,8 +47,8 @@ public class HelloApplication extends Application {
 
     private double WORLD_WIDTH;
     private double WORLD_HEIGHT;
-    private double cameraX = 0;
-    private double cameraY = 0;
+    private final double cameraX = 0;
+    private final double cameraY = 0;
 
     private double speedMod     = 1.0;
     private boolean blinkOn     = false;
@@ -82,7 +79,6 @@ public class HelloApplication extends Application {
     private final Village village = new Village();
 
     private final Pane   worldPane    = new Pane();
-    private final Canvas minimapCanvas = new Canvas(MINIMAP_W, MINIMAP_H);
     private final Label  activeLabel  = new Label();
     private final Label  statusLabel  = new Label();
     private final Label  coinsLabel   = new Label("Зароблено монет: 0");
@@ -96,8 +92,8 @@ public class HelloApplication extends Application {
         this.primaryStage = stage;
 
         Rectangle2D screen = Screen.getPrimary().getVisualBounds();
-        WORLD_WIDTH  = screen.getWidth()  * 2;
-        WORLD_HEIGHT = screen.getHeight() * 2;
+        WORLD_WIDTH  = screen.getWidth();
+        WORLD_HEIGHT = screen.getHeight();
 
         seedData();
 
@@ -122,7 +118,6 @@ public class HelloApplication extends Application {
                 .subtract(bottomBar.heightProperty()));
 
         setupKeyHandlers(scene, stage);
-        setupMinimapClick();
         startAnimationTimer();
 
         stage.setTitle("Ancient Breadwinners");
@@ -170,16 +165,9 @@ public class HelloApplication extends Application {
     private Menu buildFileMenu(Stage stage) {
         Menu file = new Menu("Файл");
 
-        MenuItem save = new MenuItem("Зберегти гру  [Ctrl+S]");
-        save.setOnAction(e -> showSaveDialog());
-
-        MenuItem load = new MenuItem("Завантажити гру  [Ctrl+O]");
-        load.setOnAction(e -> { showLoadDialog(); redraw(); });
-
         MenuItem exit = new MenuItem("Вихід");
         exit.setOnAction(e -> stage.close());
-
-        file.getItems().addAll(save, load, new SeparatorMenuItem(), exit);
+        file.getItems().addAll(exit);
         return file;
     }
 
@@ -237,10 +225,7 @@ public class HelloApplication extends Application {
   ← ↑ → ↓ — рухати виділених
 
 Навігація по карті:
-  W — прокрутити вліво
-  A — прокрутити вправо
-  D — вгору
-  Z — вниз
+  Світ фіксований на екрані (немає камери/прокрутки)
 
 Дії з хліборобами:
   U — оновити хлібороба до наступної стадії
@@ -271,9 +256,7 @@ public class HelloApplication extends Application {
 Списки:
   G — список хліборобів без макрооб'єкта
 
-Збереження:
-  Ctrl+S — зберегти гру
-  Ctrl+O — завантажити гру
+Збереження/Завантаження: вимкнено в цій збірці
 """);
         ta.setEditable(false);
         ta.setWrapText(true);
@@ -308,14 +291,6 @@ public class HelloApplication extends Application {
         MenuItem listWithoutMacro = new MenuItem("Мікрооб'єкти без макрооб'єкта  [G]");
         listWithoutMacro.setOnAction(e -> showListDialog(null, "Без макрооб'єкта"));
 
-        MenuItem countActive = new MenuItem("Активних хліборобів  [V]");
-        countActive.setOnAction(e -> showCountInfo("Активних хліборобів", activeFarmers().size()));
-
-        MenuItem countMotivation = new MenuItem("З мотивацією > 50%");
-        countMotivation.setOnAction(e -> showCountInfo("Хліборобів з мотивацією > 50%", (int) village.countWithHighMotivation(50)));
-
-        MenuItem countNoTool = new MenuItem("Без інструменту  [T]");
-        countNoTool.setOnAction(e -> showCountInfo("Хліборобів без інструменту", (int) village.countWithoutTool()));
 
         MenuItem sort = new MenuItem("Критерій сортування  [R]");
         sort.setOnAction(e -> showSortDialog(primaryStage));
@@ -324,7 +299,6 @@ public class HelloApplication extends Application {
             create, new SeparatorMenuItem(),
             buyTool, find, new SeparatorMenuItem(),
             listField, listMill, listChurch, listWithoutMacro, new SeparatorMenuItem(),
-            countActive, countMotivation, countNoTool, new SeparatorMenuItem(),
             sort
         );
         return windows;
@@ -353,17 +327,13 @@ public class HelloApplication extends Application {
                 case ESCAPE -> { clearSelection(); redraw(); }
                 case DELETE -> { deleteSelected(); redraw(); }
                 case C      -> { if (event.isControlDown()) { cloneSelected(); redraw(); } }
-                case S      -> { if (event.isControlDown()) showSaveDialog(); }
-                case O      -> { if (event.isControlDown()) { showLoadDialog(); redraw(); } }
+
                 case INSERT -> { showCreateDialog(); redraw(); }
                 case UP     -> { moveSelected(event.getCode()); redraw(); event.consume(); }
                 case DOWN   -> { moveSelected(event.getCode()); redraw(); event.consume(); }
                 case LEFT   -> { moveSelected(event.getCode()); redraw(); event.consume(); }
                 case RIGHT  -> { moveSelected(event.getCode()); redraw(); event.consume(); }
-                case W      -> { moveCamera(0, -CAMERA_STEP); event.consume(); }
-                case A      -> { moveCamera(-CAMERA_STEP, 0); event.consume(); }
-                case D      -> { moveCamera(CAMERA_STEP, 0); event.consume(); }
-                case Z      -> { moveCamera(0,  CAMERA_STEP); event.consume(); }
+
                 case I      -> showBuyToolDialog(stage);
                 case F      -> showFindDialog(stage);
                 case E      -> showListDialog(findMacroByType(WheatField.class), "Пшеничне Поле");
@@ -372,10 +342,9 @@ public class HelloApplication extends Application {
                 case G      -> showListDialog(null, "Без макрооб'єкта");
                 case Q      -> { exitSelectedFromMacro(); redraw(); }
                 case ENTER  -> { enterSelectedToMacro(); redraw(); }
-                case V      -> showCountInfo("Активних хліборобів", activeFarmers().size());
+
                 case K      -> { toggleInteractionMode(); redraw(); }
-                case T      -> showCountInfo("Хліборобів без інструменту",
-                                             (int) village.countWithoutTool());
+
                 case R      -> showSortDialog(stage);
                 case U      -> upgradeSelectedFarmers();
                 case L      -> { speedMod = 0.5; showInfo("Рух сповільнено вдвічі. Натисніть X для відновлення."); }
@@ -385,33 +354,7 @@ public class HelloApplication extends Application {
         });
     }
 
-    private void moveCamera(double dx, double dy) {
-        cameraX += dx;
-        cameraY += dy;
-        clampCamera();
-        redraw();
-    }
 
-    private void clampCamera() {
-        double vw = currentViewportWidth();
-        double vh = currentViewportHeight();
-        cameraX = Math.max(0, Math.min(cameraX, WORLD_WIDTH  - vw));
-        cameraY = Math.max(0, Math.min(cameraY, WORLD_HEIGHT - vh));
-    }
-
-    private void setupMinimapClick() {
-        minimapCanvas.setOnMousePressed(e -> {
-            double sx = MINIMAP_W / WORLD_WIDTH;
-            double sy = MINIMAP_H / WORLD_HEIGHT;
-            double worldX = e.getX() / sx;
-            double worldY = e.getY() / sy;
-            cameraX = worldX - currentViewportWidth()  / 2;
-            cameraY = worldY - currentViewportHeight() / 2;
-            clampCamera();
-            redraw();
-            e.consume();
-        });
-    }
 
     private void startAnimationTimer() {
         animationTimer = new AnimationTimer() {
@@ -694,8 +637,6 @@ public class HelloApplication extends Application {
         for (MacroObject mo : village.getMacroObjects()) drawMacro(mo);
         for (Farmer f : village.getFarmers()) drawFarmer(f);
 
-        drawMinimap();
-        worldPane.getChildren().add(minimapCanvas);
 
         updateStatus();
     }
@@ -828,46 +769,6 @@ public class HelloApplication extends Application {
         worldPane.getChildren().add(pane);
     }
 
-    private void drawMinimap() {
-        double vw = currentViewportWidth();
-        double vh = currentViewportHeight();
-
-        minimapCanvas.setLayoutX(vw - MINIMAP_W - 10);
-        minimapCanvas.setLayoutY(vh - MINIMAP_H - 10);
-
-        GraphicsContext gc = minimapCanvas.getGraphicsContext2D();
-        gc.clearRect(0, 0, MINIMAP_W, MINIMAP_H);
-
-        gc.setFill(Color.rgb(220, 210, 170, 0.9));
-        gc.fillRect(0, 0, MINIMAP_W, MINIMAP_H);
-        gc.setStroke(Color.SADDLEBROWN);
-        gc.setLineWidth(2);
-        gc.strokeRect(0, 0, MINIMAP_W, MINIMAP_H);
-
-        double sx = MINIMAP_W / WORLD_WIDTH;
-        double sy = MINIMAP_H / WORLD_HEIGHT;
-
-        for (MacroObject mo : village.getMacroObjects()) {
-            Color c = macroStroke(mo);
-            gc.setFill(Color.color(c.getRed(), c.getGreen(), c.getBlue(), 0.6));
-            gc.fillRect(mo.getX() * sx, mo.getY() * sy, mo.getWidth() * sx, mo.getHeight() * sy);
-        }
-
-        for (Farmer f : village.getFarmers()) {
-            gc.setFill(f.isActive() ? Color.YELLOW : Color.DARKGREEN);
-            double fx = f.getX() * sx;
-            double fy = f.getY() * sy;
-            gc.fillOval(fx - 3, fy - 3, 6, 6);
-        }
-
-        gc.setStroke(Color.BLUE);
-        gc.setLineWidth(1.5);
-        gc.strokeRect(cameraX * sx, cameraY * sy, vw * sx, vh * sy);
-
-        gc.setFill(Color.BLACK);
-        gc.setFont(javafx.scene.text.Font.font(9));
-        gc.fillText("Мінікарта (ЛКМ — перейти)", 4, MINIMAP_H - 4);
-    }
 
     private void updateStatus() {
         List<Farmer> active = activeFarmers();
@@ -886,9 +787,9 @@ public class HelloApplication extends Application {
             List<MacroObject> ms = village.memberships(selectedFarmer);
             String macro = ms.isEmpty() ? "жодному" : ms.getFirst().getName();
             String kindLabel;
-            if (selectedFarmer instanceof MasterFarmer) kindLabel = "Майстер-Хлібороб";
-            else if (selectedFarmer instanceof FreePeasant) kindLabel = "Вільний Селянин";
-            else if (selectedFarmer instanceof Gardener) kindLabel = "Городник";
+            if (selectedFarmer.isMasterFarmer()) kindLabel = "Майстер-Хлібороб";
+            else if (selectedFarmer.isFreePeasant()) kindLabel = "Вільний Селянин";
+            else if (selectedFarmer.isGardener()) kindLabel = "Городник";
             else kindLabel = selectedFarmer.getKind();
             statusLabel.setText(selectedFarmer.getName() + " [" + kindLabel + "] | мотивація: "
                     + selectedFarmer.getMotivation() + " | " + macro);
@@ -1127,9 +1028,9 @@ public class HelloApplication extends Application {
             List<Farmer> found = village.getFarmers().stream()
                     .filter(f -> nameFilt.isEmpty() || f.getName().toLowerCase().contains(nameFilt))
                     .filter(f -> {
-                        if ("Городник".equals(typeFilt))           return f instanceof Gardener;
-                        if ("Вільний Селянин".equals(typeFilt))     return f instanceof FreePeasant;
-                        if ("Майстер-Хлібороб".equals(typeFilt))   return f instanceof MasterFarmer;
+                        if ("Городник".equals(typeFilt))           return f.isGardener();
+                        if ("Вільний Селянин".equals(typeFilt))     return f.isFreePeasant();
+                        if ("Майстер-Хлібороб".equals(typeFilt))   return f.isMasterFarmer();
                         return true;
                     })
                     .filter(f -> !loadFilter.isSelected() || f.getMaxLoad() >= minLoad)
@@ -1199,9 +1100,7 @@ public class HelloApplication extends Application {
         alert.showAndWait();
     }
 
-    private void showCountInfo(String label, int count) {
-        showInfo(label + ": " + count);
-    }
+
 
     private void showSortDialog(Stage owner) {
         Dialog<SortCriteria> dialog = new Dialog<>();
@@ -1274,41 +1173,7 @@ public class HelloApplication extends Application {
         alert.showAndWait();
     }
 
-    private void showSaveDialog() {
-        FileChooser fc = new FileChooser();
-        fc.setTitle("Зберегти гру");
-        fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("Текстові файли (*.txt)", "*.txt"));
-        File file = fc.showSaveDialog(primaryStage);
-        if (file == null) return;
-        try {
-            GameSave save = new GameSave(village, cameraX, cameraY);
-            save.saveToFile(file);
-            showInfo("Збережено: " + file.getName());
-        } catch (IOException ex) {
-            showError("Помилка збереження: " + ex.getMessage());
-        }
-    }
 
-    private void showLoadDialog() {
-        FileChooser fc = new FileChooser();
-        fc.setTitle("Завантажити гру");
-        fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("Текстові файли (*.txt)", "*.txt"));
-        File file = fc.showOpenDialog(primaryStage);
-        if (file == null) return;
-        try {
-            GameSave save = GameSave.loadFromFile(file);
-            village.clearAll();
-            village.loadFrom(save.village);
-            cameraX = save.cameraX;
-            cameraY = save.cameraY;
-            clampCamera();
-            selectedFarmer = null;
-            selectedMacro = null;
-            showInfo("Завантажено: " + file.getName());
-        } catch (IOException ex) {
-            showError("Помилка завантаження: " + ex.getMessage());
-        }
-    }
 
     private void showAboutDialog() {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
@@ -1544,10 +1409,12 @@ public class HelloApplication extends Application {
             Farmer newFarmer = null;
             Tool currentTool = f.getTool();
 
-            if (f instanceof Gardener) {
-                newFarmer = new FreePeasant(f.getName(), f.getMotivation(), f.getSpeed(), f.getMaxLoad(), currentTool, f.getX(), f.getY());
-            } else if (f instanceof FreePeasant) {
+            if (f.isMasterFarmer()) {
+                // already top-level
+            } else if (f.isFreePeasant()) {
                 newFarmer = new MasterFarmer(f.getName(), f.getMotivation(), f.getSpeed(), f.getMaxLoad(), currentTool, f.getX(), f.getY());
+            } else if (f.isGardener()) {
+                newFarmer = new FreePeasant(f.getName(), f.getMotivation(), f.getSpeed(), f.getMaxLoad(), currentTool, f.getX(), f.getY());
             }
 
             if (newFarmer != null) {
@@ -1790,14 +1657,7 @@ public class HelloApplication extends Application {
         a.showAndWait();
     }
 
-    private void showError(String msg) {
-        Alert a = new Alert(Alert.AlertType.ERROR);
-        a.setTitle("Помилка");
-        a.setHeaderText(null);
-        a.setContentText(msg);
-        a.initOwner(primaryStage);
-        a.showAndWait();
-    }
+
 
     private record MotivationLevel(String label, int value) {
         @Override public String toString() { return label; }

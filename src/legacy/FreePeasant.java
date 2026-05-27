@@ -1,6 +1,6 @@
 package com.example.ancientbreadwinners;
 
-public class FreePeasant extends Farmer {
+public class FreePeasant extends Gardener {
     public FreePeasant(String name, int motivation, double speed, int maxLoad, Tool tool, double x, double y) {
         super(name, motivation, speed, maxLoad, tool, x, y);
     }

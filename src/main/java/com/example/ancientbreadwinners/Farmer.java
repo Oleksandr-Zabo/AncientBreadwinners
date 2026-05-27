@@ -73,9 +73,6 @@ public abstract class Farmer implements Cloneable, Comparable<Farmer>, Serializa
         }
     }
 
-    public double effectiveSpeed() {
-        return speed * getTool().speedCoeff();
-    }
 
     public FarmerState getState() {
         return state == null ? FarmerState.IDLE : state;
@@ -186,6 +183,8 @@ public abstract class Farmer implements Cloneable, Comparable<Farmer>, Serializa
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof Farmer farmer)) return false;
+        if (this.getClass() != farmer.getClass()) return false;
+        if (this.getMotivation() != farmer.getMotivation()) return false;
         return Objects.equals(name, farmer.name);
     }
 
@@ -193,6 +192,9 @@ public abstract class Farmer implements Cloneable, Comparable<Farmer>, Serializa
     public int hashCode() {
         return Objects.hash(name);
     }
+    public boolean isGardener() { return this instanceof Gardener; }
+    public boolean isFreePeasant() { return this instanceof FreePeasant; }
+    public boolean isMasterFarmer() { return this instanceof MasterFarmer; }
 
     @Override
     public String toString() {
