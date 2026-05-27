@@ -6,7 +6,7 @@ public class Gardener extends Farmer {
     }
 
     public Gardener(String name, double x, double y) {
-        this(name, 70, 1.1, 12, new Tool(ToolTypes.Sickle, 1.0f), x, y);
+        this(name, 100, 1.1, 12, new Tool(ToolTypes.Sickle, 1.0f), x, y);
     }
 
     @Override

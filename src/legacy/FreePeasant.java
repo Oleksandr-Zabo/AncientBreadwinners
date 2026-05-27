@@ -6,7 +6,7 @@ public class FreePeasant extends Farmer {
     }
 
     public FreePeasant(String name, double x, double y) {
-        this(name, 60, 1.3, 10, new Tool(ToolTypes.Knife, 1.0f), x, y);
+        this(name, 100, 1.3, 15, new Tool(ToolTypes.Knife, 1.0f), x, y);
     }
 
     @Override

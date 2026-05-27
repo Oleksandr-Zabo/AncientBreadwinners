@@ -21,32 +21,32 @@ import java.util.stream.Collectors;
 
 public class HelloApplication extends Application {
 
-    private static final double MICRO_IMAGE_SIZE      = 75;
-    private static final double MICRO_BLOCK_SIZE      = 125;
-    private static final double MICRO_TOOL_SIZE       = 40;
-    private static final double MICRO_TOOL_OFFSET_X   = 75;
-    private static final double MICRO_TOOL_OFFSET_Y   = 75;
-    private static final double MICRO_FRAME_PADDING   = 10;
-    private static final double MICRO_FRAME_STROKE_W  = 4.0;
-    private static final double MOTIVATION_BAR_W      = 125;
-    private static final double MOTIVATION_BAR_H      = 18;
-    private static final double MOTIVATION_OFFSET_Y   = -10;
-    private static final double NAME_OFFSET_Y         = 90;
+    private static final double MICRO_IMAGE_SIZE = 75;
+    private static final double MICRO_BLOCK_SIZE = 125;
+    private static final double MICRO_TOOL_SIZE = 40;
+    private static final double MICRO_TOOL_OFFSET_X = 75;
+    private static final double MICRO_TOOL_OFFSET_Y = 75;
+    private static final double MICRO_FRAME_PADDING = 10;
+    private static final double MICRO_FRAME_STROKE_W = 4.0;
+    private static final double MOTIVATION_BAR_W = 125;
+    private static final double MOTIVATION_BAR_H = 18;
+    private static final double MOTIVATION_OFFSET_Y  = -10;
+    private static final double NAME_OFFSET_Y = 90;
 
-    private static final double MACRO_SIZE            = 250;
-    private static final double MACRO_IMAGE_SIZE      = 150;
-    private static final double MACRO_IMAGE_OFFSET    = 50;
-    private static final double MACRO_TITLE_OFFSET_Y  = 225;
-    private static final double MACRO_STROKE_W        = 4.0;
+    private static final double MACRO_SIZE = 250;
+    private static final double MACRO_IMAGE_SIZE = 150;
+    private static final double MACRO_IMAGE_OFFSET = 50;
+    private static final double MACRO_TITLE_OFFSET_Y = 225;
+    private static final double MACRO_STROKE_W = 4.0;
 
-    private static final double MINIMAP_W             = 240;
-    private static final double MINIMAP_H             = 160;
-    private static final double CAMERA_STEP           = 60;
+    private static final double MINIMAP_W  = 360;
+    private static final double MINIMAP_H  = 240;
+    private static final double CAMERA_STEP = 60;
 
-    private static final double BASE_SPEED_PPS        = 80.0;
-    private static final double TALK_DISTANCE         = 110.0;
-    private static final long   TALK_COOLDOWN_NS      = 20_000_000_000L;
-    private static final long   TALK_DURATION_NS      = 3_000_000_000L;
+    private static final double BASE_SPEED_PPS = 80.0;
+    private static final double TALK_DISTANCE  = 110.0;
+    private static final long   TALK_COOLDOWN_NS = 20_000_000_000L;
+    private static final long   TALK_DURATION_NS = 3_000_000_000L;
 
     private double WORLD_WIDTH;
     private double WORLD_HEIGHT;
@@ -848,16 +848,41 @@ public class HelloApplication extends Application {
         double sy = MINIMAP_H / WORLD_HEIGHT;
 
         for (MacroObject mo : village.getMacroObjects()) {
-            Color c = macroStroke(mo);
-            gc.setFill(Color.color(c.getRed(), c.getGreen(), c.getBlue(), 0.6));
-            gc.fillRect(mo.getX() * sx, mo.getY() * sy, mo.getWidth() * sx, mo.getHeight() * sy);
+            double mx = mo.getX() * sx;
+            double my = mo.getY() * sy;
+            double mw = Math.max(6, mo.getWidth() * sx);
+            double mh = Math.max(6, mo.getHeight() * sy);
+            gc.drawImage(loadImage(mo.getImageAsset()), mx, my, mw, mh);
+            if (mo == selectedMacro) {
+                gc.setStroke(Color.DEEPSKYBLUE);
+                gc.setLineWidth(1.5);
+                gc.strokeRect(mx, my, mw, mh);
+            }
         }
 
         for (Farmer f : village.getFarmers()) {
-            gc.setFill(f.isActive() ? Color.YELLOW : Color.DARKGREEN);
             double fx = f.getX() * sx;
             double fy = f.getY() * sy;
-            gc.fillOval(fx - 3, fy - 3, 6, 6);
+            double fw = Math.max(4, Farmer.WIDTH * sx);
+            double fh = Math.max(4, Farmer.HEIGHT * sy);
+            gc.drawImage(loadImage(f.getImageAsset()), fx, fy, fw, fh);
+            boolean talking = f.getState() == FarmerState.TALKING;
+            boolean tripleTalking = f.getState() == FarmerState.TALKING_TRIPLE;
+            if (talking || tripleTalking) {
+                Color talkColor = tripleTalking ? Color.LIMEGREEN : Color.GOLD;
+                gc.setStroke(talkColor);
+                gc.setLineWidth(blinkOn ? 2.2 : 1.2);
+                gc.strokeRect(fx - 1, fy - 1, fw + 2, fh + 2);
+                if (blinkOn) {
+                    gc.setFill(Color.color(talkColor.getRed(), talkColor.getGreen(), talkColor.getBlue(), 0.35));
+                    gc.fillRect(fx - 1, fy - 1, fw + 2, fh + 2);
+                }
+            }
+            if (f.isActive() || f == selectedFarmer) {
+                gc.setStroke(f == selectedFarmer ? Color.GOLD : Color.ORANGE);
+                gc.setLineWidth(1.2);
+                gc.strokeRect(fx, fy, fw, fh);
+            }
         }
 
         gc.setStroke(Color.BLUE);
