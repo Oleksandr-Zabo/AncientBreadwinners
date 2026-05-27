@@ -1316,14 +1316,16 @@ public class HelloApplication extends Application {
                 village.assignToMacro(f, macro);
                 double coeff = f.getTool().getType().speedCoeff();
                 f.setWorkTimerEnd(now + workDurationNs(f.getMaxLoad(), coeff));
-                
-                if (macro instanceof WheatField) {
-                    f.setState(FarmerState.WORKING_AT_FIELD);
-                } else if (macro instanceof Mill) {
-                    f.setState(FarmerState.WORKING_AT_MILL);
-                } else if (macro instanceof Church) {
-                    f.setRestTimerEnd(now + 3_000_000_000L);
-                    f.setState(FarmerState.RESTING_AT_CHURCH);
+
+                switch (macro) {
+                    case WheatField wheatField -> f.setState(FarmerState.WORKING_AT_FIELD);
+                    case Mill mill -> f.setState(FarmerState.WORKING_AT_MILL);
+                    case Church church -> {
+                        f.setRestTimerEnd(now + 3_000_000_000L);
+                        f.setState(FarmerState.RESTING_AT_CHURCH);
+                    }
+                    default -> {
+                    }
                 }
             }
         }
@@ -1410,7 +1412,7 @@ public class HelloApplication extends Application {
             Tool currentTool = f.getTool();
 
             if (f.isMasterFarmer()) {
-                // already top-level
+
             } else if (f.isFreePeasant()) {
                 newFarmer = new MasterFarmer(f.getName(), f.getMotivation(), f.getSpeed(), f.getMaxLoad(), currentTool, f.getX(), f.getY());
             } else if (f.isGardener()) {
