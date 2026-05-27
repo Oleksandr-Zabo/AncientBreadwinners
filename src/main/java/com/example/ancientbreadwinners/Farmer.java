@@ -190,6 +190,8 @@ public abstract class Farmer implements Cloneable, Comparable<Farmer>, Serializa
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof Farmer farmer)) return false;
+        if (this.getClass() != farmer.getClass()) return false;
+        if (this.getMotivation() != farmer.getMotivation()) return false;
         return Objects.equals(name, farmer.name);
     }
 
