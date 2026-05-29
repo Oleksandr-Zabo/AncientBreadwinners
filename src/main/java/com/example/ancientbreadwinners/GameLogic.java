@@ -77,8 +77,6 @@ class GameLogic {
     java.util.List<Farmer> activeFarmers() { return world.activeFarmers(); }
     java.util.List<Farmer> sortedByCriteria(java.util.List<Farmer> input) { return world.sortedByCriteria(input); }
     MacroObject findMacroByType(Class<? extends MacroObject> type) { return world.findMacroByType(type); }
-    void checkFarmerTalking(java.util.List<Farmer> farmers, long now) { world.checkFarmerTalking(farmers, now); }
-    void updateFarmerAI(Farmer farmer, long now, double dt) { world.updateFarmerAI(farmer, now, dt); }
     void syncMembershipByTouch(Farmer farmer) { world.syncMembershipByTouch(farmer); }
     void clampFarmerInsideWorld(Farmer f) { world.clampFarmerInsideWorld(f); }
 }

@@ -5,6 +5,10 @@ import java.util.Set;
 public class Gardener extends Farmer {
     private static final long serialVersionUID = 1L;
 
+    public Gardener() {
+        this("Городник", 0, 0);
+    }
+
     public Gardener(String name, int motivation, double speed, int maxLoad, Tool tool, double x, double y) {
         super(name, motivation, speed, maxLoad, tool, x, y);
     }

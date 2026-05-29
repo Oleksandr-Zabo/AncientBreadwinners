@@ -3,7 +3,6 @@ package com.example.ancientbreadwinners;
 import javafx.scene.input.KeyCode;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -357,87 +356,6 @@ class GameWorldService {
         return x1 <= x2 + w2 && x1 + w1 >= x2 && y1 <= y2 + h2 && y1 + h1 >= y2;
     }
 
-    private boolean placeInMacroWithSpacing(Farmer farmer, MacroObject macro) {
-        if (!macro.contains(farmer) && !canEnterMacro(macro)) {
-            app.ui.showInfo("Макрооб'єкт переповнений! Максимум " + MAX_FARMERS_IN_MACRO + " фермерів.");
-            return false;
-        }
-
-        double margin = 20;
-        double availableSpace = macro.getWidth() - 2 * margin;
-        double slotSize = availableSpace / 2;
-
-        int index = macro.getMembers().size();
-        int col = index % 2;
-        int row = index / 2;
-
-        double x = macro.getX() + margin + col * slotSize;
-        double y = macro.getY() + margin + row * slotSize;
-
-        double centerOffsetX = (slotSize - Farmer.WIDTH) / 2;
-        double centerOffsetY = (slotSize - Farmer.HEIGHT) / 2;
-
-        farmer.setX(x + centerOffsetX);
-        farmer.setY(y + centerOffsetY);
-        return true;
-    }
-
-    private Optional<MacroObject> findNearbyMacroForManualEnter(Farmer farmer, double proximityPx) {
-        double fx = farmer.getX();
-        double fy = farmer.getY();
-        MacroObject best = null;
-        double bestDistance = Double.MAX_VALUE;
-
-        for (MacroObject mo : app.village.getMacroObjects()) {
-            double expandedLeft = mo.getX() - proximityPx;
-            double expandedTop = mo.getY() - proximityPx;
-            double expandedRight = mo.getX() + mo.getWidth() + proximityPx;
-            double expandedBottom = mo.getY() + mo.getHeight() + proximityPx;
-
-            boolean near = fx + Farmer.WIDTH >= expandedLeft
-                    && fx <= expandedRight
-                    && fy + Farmer.HEIGHT >= expandedTop
-                    && fy <= expandedBottom;
-            if (!near) continue;
-
-            double dx = (mo.getX() + mo.getWidth() / 2.0) - (fx + Farmer.WIDTH / 2.0);
-            double dy = (mo.getY() + mo.getHeight() / 2.0) - (fy + Farmer.HEIGHT / 2.0);
-            double dist = Math.hypot(dx, dy);
-            if (dist < bestDistance) {
-                bestDistance = dist;
-                best = mo;
-            }
-        }
-
-        return Optional.ofNullable(best);
-    }
-
-    private void ejectFromMacro(Farmer farmer, MacroObject macro) {
-        double centerX = macro.getX() + macro.getWidth() / 2;
-        double centerY = macro.getY() + macro.getHeight() / 2;
-        double fx = farmer.getX();
-        double fy = farmer.getY();
-
-        double dx = fx - centerX;
-        double dy = fy - centerY;
-
-        if (Math.abs(dx) > Math.abs(dy)) {
-            if (dx > 0) {
-                farmer.setX(macro.getX() + macro.getWidth() + 10);
-            } else {
-                farmer.setX(macro.getX() - Farmer.WIDTH - 10);
-            }
-        } else {
-            if (dy > 0) {
-                farmer.setY(macro.getY() + macro.getHeight() + 10);
-            } else {
-                farmer.setY(macro.getY() - Farmer.HEIGHT - 10);
-            }
-        }
-
-        app.village.clearMembership(farmer);
-        clampFarmerInsideWorld(farmer);
-    }
 
     private void teleportToFreePositionInMacro(Farmer farmer, MacroObject macro) {
         double margin = 20;
@@ -464,20 +382,6 @@ class GameWorldService {
 
     private double clampMicroY(double y) {
         return Math.clamp(y, HelloApplication.MICRO_FRAME_PADDING, app.WORLD_HEIGHT - HelloApplication.MICRO_BLOCK_SIZE - HelloApplication.MICRO_FRAME_PADDING);
-    }
-
-    private String nextCloneName(String sourceName) {
-        String base = cloneBaseName(sourceName);
-        String prefix = base + "_копія";
-        int next = 1;
-        for (Farmer f : app.village.getFarmers()) {
-            String n = f.getName();
-            if (n.startsWith(prefix)) {
-                String suffix = n.substring(prefix.length());
-                if (suffix.matches("\\d+")) next = Math.max(next, Integer.parseInt(suffix) + 1);
-            }
-        }
-        return prefix + next;
     }
 
     private String cloneBaseName(String name) {

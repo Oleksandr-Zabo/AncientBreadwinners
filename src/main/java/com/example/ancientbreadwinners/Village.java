@@ -2,7 +2,6 @@ package com.example.ancientbreadwinners;
 
 import java.io.Serializable;
 import java.util.*;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class Village implements Serializable {
@@ -53,23 +52,6 @@ public class Village implements Serializable {
         target.addFarmer(farmer);
     }
 
-    public Optional<MacroObject> findTouchedMacro(Farmer farmer) {
-        for (MacroObject mo : macroObjects) {
-            if (intersects(farmer.getX(), farmer.getY(), mo.getX(), mo.getY(), mo.getWidth(), mo.getHeight())) {
-                return Optional.of(mo);
-            }
-        }
-        return Optional.empty();
-    }
-
-    public boolean placeInsideMacro(Farmer farmer, MacroObject mo) {
-        Placement spot = findFreeSpot(mo.getX(), mo.getY(), mo.getWidth(), mo.getHeight(), farmer);
-        if (spot == null) return false;
-        farmer.setX(spot.x());
-        farmer.setY(spot.y());
-        return true;
-    }
-
     public Optional<Placement> findFreeAdjacentPosition(Farmer source, double worldWidth, double worldHeight) {
         double step = 20;
         double[][] offsets = {
@@ -97,16 +79,6 @@ public class Village implements Serializable {
             if (intersects(x, y, other.getX(), other.getY(), Farmer.WIDTH, Farmer.HEIGHT)) return false;
         }
         return true;
-    }
-
-    private Placement findFreeSpot(double left, double top, double width, double height, Farmer ignored) {
-        double step = 20;
-        for (double y = top; y <= top + height - Farmer.HEIGHT; y += step) {
-            for (double x = left; x <= left + width - Farmer.WIDTH; x += step) {
-                if (isAreaFree(x, y, ignored)) return new Placement(x, y);
-            }
-        }
-        return null;
     }
 
     private boolean intersects(double x1, double y1, double x2, double y2, double w2, double h2) {
@@ -157,29 +129,6 @@ public class Village implements Serializable {
 
     public long countWithoutTool() {
         return farmers.stream().filter(f -> f.getTool().getType() == ToolTypes.NoTool).count();
-    }
-
-    public List<Farmer> cloneFarmersList() {
-        List<Farmer> cloned = new ArrayList<>(farmers.size());
-        for (Farmer f : farmers) cloned.add(f != null ? f.clone() : null);
-        return cloned;
-    }
-
-    public int binarySearch(Farmer key, Comparator<Farmer> comparator) {
-        return Collections.binarySearch(farmers, key, comparator);
-    }
-
-    public int[] findAllMatches(Farmer key, Comparator<Farmer> comparator) {
-        int idx = binarySearch(key, comparator);
-        if (idx < 0) return new int[0];
-        List<Integer> matches = new ArrayList<>();
-        for (int i = idx; i >= 0 && comparator.compare(farmers.get(i), key) == 0; i--) matches.add(i);
-        for (int i = idx + 1; i < farmers.size() && comparator.compare(farmers.get(i), key) == 0; i++) matches.add(i);
-        return matches.stream().mapToInt(Integer::intValue).toArray();
-    }
-
-    public void deleteByCategory(Predicate<Farmer> predicate) {
-        farmers.removeIf(predicate);
     }
 
     public void loadFrom(Village other) {

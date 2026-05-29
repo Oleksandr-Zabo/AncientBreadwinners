@@ -292,34 +292,6 @@ class SelectionService {
         return x1 <= x2 + w2 && x1 + w1 >= x2 && y1 <= y2 + h2 && y1 + h1 >= y2;
     }
 
-    double[] findSpotInsideMacro(MacroObject mo, Farmer farmer) {
-        double baseX = mo.getX() + 20;
-        double baseY = mo.getY() + 20;
-        int index = app.village.getFarmers().indexOf(farmer);
-        int col = index % 3;
-        int row = index / 3;
-        double x = baseX + col * (Farmer.WIDTH * 0.6);
-        double y = baseY + row * (Farmer.HEIGHT * 0.6);
-        return new double[]{x, y};
-    }
-
-    double[] findSpotOutsideMacro(MacroObject macro, Farmer farmer) {
-        double mx = macro.getX() + macro.getWidth() / 2;
-        double my = macro.getY() + macro.getHeight() / 2;
-        double radius = macro.getWidth() / 2 + 50;
-
-        int index = app.village.getFarmers().indexOf(farmer);
-        int totalFarmers = app.village.getFarmers().size();
-        double angle = (2 * Math.PI * index) / Math.max(totalFarmers, 1);
-
-        double px = mx + radius * Math.cos(angle) - Farmer.WIDTH / 2;
-        double py = my + radius * Math.sin(angle) - Farmer.HEIGHT / 2;
-
-        px = clampMicroX(px);
-        py = clampMicroY(py);
-        return new double[]{px, py};
-    }
-
     double clampMicroX(double x) {
         return Math.clamp(x, HelloApplication.MICRO_FRAME_PADDING, app.WORLD_WIDTH - HelloApplication.MICRO_BLOCK_SIZE - HelloApplication.MICRO_FRAME_PADDING);
     }

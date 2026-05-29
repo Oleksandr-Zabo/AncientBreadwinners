@@ -5,6 +5,10 @@ import java.util.Set;
 public class MasterFarmer extends FreePeasant {
     private static final long serialVersionUID = 1L;
 
+    public MasterFarmer() {
+        this("Майстер-Хлібороб", 0, 0);
+    }
+
     public MasterFarmer(String name, int motivation, double speed, int maxLoad, Tool tool, double x, double y) {
         super(name, motivation, speed, maxLoad, tool, x, y);
     }

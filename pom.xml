@@ -63,9 +63,6 @@
                                 com.example.ancientbreadwinners/com.example.ancientbreadwinners.HelloApplication
                             </mainClass>
                             <launcher>app</launcher>
-                            <jvmArgs>
-                                <jvmArg>--enable-native-access=javafx.graphics</jvmArg>
-                            </jvmArgs>
                             <jlinkZipName>app</jlinkZipName>
                             <jlinkImageName>app</jlinkImageName>
                             <noManPages>true</noManPages>
@@ -79,9 +76,6 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.2.5</version>
-                <configuration>
-                    <argLine>--enable-native-access=javafx.graphics</argLine>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -90,9 +84,6 @@
                 <configuration>
                     <mainClass>com.example.ancientbreadwinners.Launcher</mainClass>
                     <arguments/>
-                    <jvmArgs>
-                        <jvmArg>--enable-native-access=javafx.graphics</jvmArg>
-                    </jvmArgs>
                     <systemProperties>
                         <systemProperty>
                             <key>jdk.lang.Process.allowAmbiguousCommands</key>

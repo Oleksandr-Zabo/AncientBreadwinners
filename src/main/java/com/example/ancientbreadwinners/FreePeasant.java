@@ -5,6 +5,10 @@ import java.util.Set;
 public class FreePeasant extends Gardener {
     private static final long serialVersionUID = 1L;
 
+    public FreePeasant() {
+        this("Вільний Селянин", 0, 0);
+    }
+
     public FreePeasant(String name, int motivation, double speed, int maxLoad, Tool tool, double x, double y) {
         super(name, motivation, speed, maxLoad, tool, x, y);
     }

@@ -109,14 +109,6 @@ public abstract class Farmer implements Cloneable, Comparable<Farmer>, Serializa
     public int getCurrentLoad() { return currentLoad; }
     public void setCurrentLoad(int v) { currentLoad = Math.max(0, v); }
 
-    public void walkPixels(double pixels) {
-        distWalkedSinceDrain += pixels;
-        while (distWalkedSinceDrain >= 20.0) {
-            setMotivation(motivation - 1);
-            distWalkedSinceDrain -= 20.0;
-        }
-    }
-
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 
