@@ -199,6 +199,23 @@ class GameUi {
         }
     }
 
+
+    /* ... (your existing code) ...
+    dialog.getDialogPane().setContent(grid);
+
+     Add this line to apply your custom stylesheet
+    dialog.getDialogPane().getStylesheets().add(getClass().getResource("dialog-styles.css").toExternalForm());
+
+    dialog.setResultConverter(bt -> {
+        /... (rest of your code) ...
+
+
+        dialog-styles.css
+    .dialog-pane .header {
+            -fx-background-color: red;  Sets the background color of the header to red
+        }
+        */
+
     void showControlsDialog() {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Керування");
@@ -352,6 +369,7 @@ class GameUi {
             farmer.setX(app.cameraX + 100);
             farmer.setY(app.cameraY + 200);
         }
+
         app.logic.clampFarmerInsideWorld(farmer);
         app.village.addFarmer(farmer);
         app.logic.syncMembershipByTouch(farmer);
@@ -470,6 +488,24 @@ class GameUi {
         farmer.setToolType(chosen);
         showInfo(farmer.getName() + " придбав " + chosen.displayName() + ". Залишок: " + app.village.getTotalCoins() + " монет.");
     }
+
+    /*
+         Optional: To change the color of the title text itself
+    .dialog-pane .header .label {
+            -fx-text-fill: white; /* Sets the text color of the title to white
+        }
+
+                dialog.getDialogPane().setStyle("-fx-background-color: red;");
+
+         dialog-styles.css
+    .dialog-pane .header {
+            -fx-background-color: red; Sets the background color of the header to red
+        }
+
+        Optional: To change the color of the title text itself
+    .dialog-pane .header .label {
+            -fx-text-fill: white; /* Sets the text color of the title to white
+        }*/
 
     void showFindDialog(Stage owner) {
         Dialog<Void> dialog = new Dialog<>();
